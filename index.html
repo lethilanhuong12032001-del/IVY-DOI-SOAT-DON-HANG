@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đối Soát Hoàn Hủy & Nhập Kho - Ivy Moda</title>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <!-- SheetJS for client-side Excel parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="dark-mode">
+    <div class="app-container">
+        <!-- Sidebar/Navbar -->
+        <header class="main-header">
+            <div class="brand">
+                <i class="fa-solid fa-scale-balanced brand-icon"></i>
+                <div class="brand-text">
+                    <h1>RECONCILE</h1>
+                    <span>IVY MODA TMDT</span>
+                </div>
+            </div>
+            <nav class="nav-tabs">
+                <button class="tab-btn active" data-tab="upload-tab">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Tải File Dữ Liệu
+                </button>
+                <button class="tab-btn" data-tab="overview-tab" id="nav-overview-btn" disabled>
+                    <i class="fa-solid fa-chart-pie"></i> Tổng Quan
+                </button>
+                <button class="tab-btn" data-tab="case1-tab" id="nav-case1-btn" disabled>
+                    <i class="fa-solid fa-circle-exclamation text-danger"></i> Case 1: Trả hàng chưa nhận kho <span class="badge badge-danger" id="case1-count-badge">0</span>
+                </button>
+                <button class="tab-btn" data-tab="case2-tab" id="nav-case2-btn" disabled>
+                    <i class="fa-solid fa-truck-ramp-box text-warning"></i> Case 2: Đơn hủy chưa hoàn <span class="badge badge-warning" id="case2-count-badge">0</span>
+                </button>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
+                <div class="profile-info">
+                    <span class="username">Admin Ivy</span>
+                    <span class="role">Quản lý đối soát</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Tab 1: Upload Files -->
+            <section id="upload-tab" class="tab-content active">
+                <div class="welcome-banner">
+                    <div class="banner-text">
+                        <h2>Hệ Thống Đối Soát Đơn Hoàn Hủy Tự Động</h2>
+                        <p>Tải lên file đối soát nội bộ và các báo cáo TikTok để tự động phát hiện lệch kho, tránh thất thoát đơn hàng hoàn trả.</p>
+                    </div>
+                    <div class="banner-actions">
+                        <button class="btn btn-secondary" id="clear-all-btn">
+                            <i class="fa-solid fa-trash-can"></i> Xóa Hết Dữ Liệu Cũ
+                        </button>
+                    </div>
+                </div>
+
+                <div class="upload-grid">
+                    <!-- Card 1: Internal File -->
+                    <div class="upload-card" id="card-internal">
+                        <div class="card-header-icon">
+                            <i class="fa-solid fa-warehouse icon-warehouse"></i>
+                        </div>
+                        <h3>Dữ Liệu Nội Bộ Kho</h3>
+                        <p class="description">File xuất từ dữ liệu nội bộ (trạng thái: Chờ giao vận, Đã trả hàng/Hủy COD, Đã trả hàng/ Đổi hàng).</p>
+                        
+                        <div class="dropzone" id="dropzone-internal">
+                            <input type="file" id="file-internal" accept=".csv" class="file-input">
+                            <div class="dropzone-prompt">
+                                <i class="fa-solid fa-file-csv"></i>
+                                <span>Kéo thả file .csv hoặc click để chọn</span>
+                                <small>Yêu cầu: Mã đơn hàng, Trạng thái IVY, Mã vận đơn</small>
+                            </div>
+                        </div>
+                        <div class="file-info-bar hidden" id="info-internal">
+                            <span class="file-name">filename.csv</span>
+                            <span class="file-size">0 KB</span>
+                            <span class="status-badge status-loading"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: TikTok All Orders -->
+                    <div class="upload-card" id="card-tiktok-all">
+                        <div class="card-header-icon">
+                            <i class="fa-solid fa-store icon-tiktok"></i>
+                        </div>
+                        <h3>TikTok: Tất Cả Đơn Hàng</h3>
+                        <p class="description">File xuất ở mục quản lý đơn hàng của TikTok Shop (chứa tất cả các đơn hàng, bao gồm đang giao, hủy, hoàn).</p>
+                        
+                        <div class="dropzone" id="dropzone-tiktok-all">
+                            <input type="file" id="file-tiktok-all" accept=".xlsx" class="file-input">
+                            <div class="dropzone-prompt">
+                                <i class="fa-solid fa-file-excel text-success"></i>
+                                <span>Kéo thả file .xlsx hoặc click để chọn</span>
+                                <small>Yêu cầu: Order ID, Order Status, Cancelation/Return Type</small>
+                            </div>
+                        </div>
+                        <div class="file-info-bar hidden" id="info-tiktok-all">
+                            <span class="file-name">filename.xlsx</span>
+                            <span class="file-size">0 KB</span>
+                            <span class="status-badge status-loading"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: TikTok Returns -->
+                    <div class="upload-card" id="card-tiktok-returns">
+                        <div class="card-header-icon">
+                            <i class="fa-solid fa-rotate-left icon-return"></i>
+                        </div>
+                        <h3>TikTok: Đơn Trả Hàng/Hoàn Tiền</h3>
+                        <p class="description">File xuất ở mục quản lý trả hàng của TikTok (những đơn khách đã nhận sau đó bấm yêu cầu trả hàng).</p>
+                        
+                        <div class="dropzone" id="dropzone-tiktok-returns">
+                            <input type="file" id="file-tiktok-returns" accept=".xlsx" class="file-input">
+                            <div class="dropzone-prompt">
+                                <i class="fa-solid fa-file-excel text-success"></i>
+                                <span>Kéo thả file .xlsx hoặc click để chọn</span>
+                                <small>Yêu cầu: Return Order ID, Order ID, Return Status</small>
+                            </div>
+                        </div>
+                        <div class="file-info-bar hidden" id="info-tiktok-returns">
+                            <span class="file-name">filename.xlsx</span>
+                            <span class="file-size">0 KB</span>
+                            <span class="status-badge status-loading"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-bar text-center">
+                    <button class="btn btn-primary btn-lg" id="run-reconcile-btn" disabled>
+                        <i class="fa-solid fa-scale-balanced"></i> BẮT ĐẦU ĐỐI SOÁT DỮ LIỆU
+                    </button>
+                </div>
+            </section>
+
+            <!-- Tab 2: Overview Statistics -->
+            <section id="overview-tab" class="tab-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-indigo"><i class="fa-solid fa-bag-shopping"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-label">Tổng Đơn Hàng TikTok</span>
+                            <h3 class="stat-value" id="stat-total-tiktok">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-blue"><i class="fa-solid fa-warehouse"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-label">Dữ Liệu Kho Nội Bộ</span>
+                            <h3 class="stat-value" id="stat-total-internal">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-purple"><i class="fa-solid fa-rotate-left"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-label">Yêu Cầu Hoàn/Hủy TikTok</span>
+                            <h3 class="stat-value" id="stat-total-returns">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card border-danger">
+                        <div class="stat-icon bg-danger"><i class="fa-solid fa-circle-exclamation"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-label">Case 1: Trả Hàng Chưa Nhập Kho</span>
+                            <h3 class="stat-value text-danger" id="stat-case1-count">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card border-warning">
+                        <div class="stat-icon bg-warning"><i class="fa-solid fa-truck-ramp-box text-dark"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-label">Case 2: Đơn Hủy Chưa Hoàn Kho</span>
+                            <h3 class="stat-value text-warning" id="stat-case2-count">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-success"><i class="fa-solid fa-heart-circle-check"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-label">Tỉ Lệ Thất Thoát (Ước Tính)</span>
+                            <h3 class="stat-value text-success" id="stat-loss-rate">0%</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-layout-grid">
+                    <div class="dashboard-panel">
+                        <h3><i class="fa-solid fa-circle-info text-indigo"></i> Phân Tích Hiện Trạng Đơn Hoàn Hủy</h3>
+                        <div class="info-list">
+                            <div class="info-item">
+                                <div class="info-dot dot-danger"></div>
+                                <div class="info-details">
+                                    <h4>Trường hợp 1: Sàn đã báo hoàn thành công nhưng kho chưa nhận</h4>
+                                    <p>Tình trạng: Khách bấm trả hàng trên app, TikTok đã duyệt hoàn tiền thành công cho khách, nhưng hệ thống kho vẫn chưa cập nhật trạng thái đã nhận hàng về kho (Status: "Chờ giao vận"). Cần kiểm tra bưu cục hoàn hoặc kiện hàng tại kho.</p>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-dot dot-warning"></div>
+                                <div class="info-details">
+                                    <h4>Trường hợp 2: Khách từ chối nhận/hủy nhưng chưa thấy hoàn về</h4>
+                                    <p>Tình trạng: Đơn hàng bị hủy do khách không nhận (bom hàng) hoặc hủy lúc đang giao. Trên sàn ghi nhận đã hủy/hoàn hàng, nhưng kho nội bộ vẫn đang ở trạng thái đã xuất đi (Status: "Chờ giao vận"). Cần liên hệ đối tác vận chuyển để hoàn kiện hàng.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-panel text-center flex-center flex-column">
+                        <h3>Tỉ Lệ Khớp Kho</h3>
+                        <div class="gauge-container">
+                            <div class="gauge-ring">
+                                <div class="gauge-fill" id="gauge-fill-element"></div>
+                                <div class="gauge-cover">
+                                    <span id="gauge-percentage-text">100%</span>
+                                    <small>Kiện hàng an toàn</small>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="description mt-4">Số lượng đơn hàng hoàn/hủy đã được ghi nhận nhập kho thành công so với tổng số lượng hoàn hủy trên sàn.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 3: Case 1 Details Table -->
+            <section id="case1-tab" class="tab-content">
+                <div class="table-actions-bar">
+                    <div class="search-filter-group">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="case1-search" placeholder="Tìm kiếm theo mã đơn, người mua...">
+                        </div>
+                        <div class="filter-box">
+                            <select id="case1-reason-filter">
+                                <option value="">Tất cả lý do trả hàng</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-success" id="export-case1-btn">
+                            <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo Excel
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="reconcile-table" id="case1-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Mã Đơn Hàng (Sàn)</th>
+                                <th>Mã Sản Phẩm</th>
+                                <th>Mã IVY (Kho)</th>
+                                <th>Người Mua</th>
+                                <th>Lý Do Trả Hàng</th>
+                                <th>Trạng Thái TikTok</th>
+                                <th>Trạng Thái Kho</th>
+                                <th>Thời Gian Hoàn Tiền</th>
+                                <th>Mã Vận Đơn Trả</th>
+                            </tr>
+                        </thead>
+                        <tbody id="case1-tbody">
+                            <!-- Rows will be dynamically rendered -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-pagination-info" id="case1-pagination-info">
+                    Đang hiển thị 0/0 đơn hàng bị lệch.
+                </div>
+            </section>
+
+            <!-- Tab 4: Case 2 Details Table -->
+            <section id="case2-tab" class="tab-content">
+                <div class="table-actions-bar">
+                    <div class="search-filter-group">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="case2-search" placeholder="Tìm theo mã đơn, người nhận, vận đơn...">
+                        </div>
+                        <div class="filter-box">
+                            <select id="case2-carrier-filter">
+                                <option value="">Tất cả đơn vị vận chuyển</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-success" id="export-case2-btn">
+                            <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo Excel
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="reconcile-table" id="case2-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Mã Đơn Hàng (Sàn)</th>
+                                <th>Mã IVY (Kho)</th>
+                                <th>Người Nhận</th>
+                                <th>Số Điện Thoại</th>
+                                <th>Đơn Vị Vận Chuyển</th>
+                                <th>Mã Vận Đơn</th>
+                                <th>Lý Do Hủy</th>
+                                <th>Trạng Thái TikTok</th>
+                                <th>Trạng Thái Kho</th>
+                            </tr>
+                        </thead>
+                        <tbody id="case2-tbody">
+                            <!-- Rows will be dynamically rendered -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-pagination-info" id="case2-pagination-info">
+                    Đang hiển thị 0/0 đơn hàng bị lệch.
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Error/Notification Modal -->
+    <div class="modal hidden" id="error-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-danger"><i class="fa-solid fa-circle-xmark"></i> Có Lỗi Xảy Ra</h3>
+                <button class="close-modal-btn" id="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="error-modal-message">Nội dung thông báo lỗi tại đây...</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="close-modal-footer-btn">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Loader Overlay -->
+    <div class="loader-overlay hidden" id="loader-overlay">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Đang đối chiếu hàng ngàn dòng dữ liệu... Vui lòng đợi trong giây lát.</div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
