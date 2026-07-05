@@ -433,6 +433,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 });
+                // Create a Set of Order IDs in Case 1 to filter out duplicates in Case 2
+                const case1OrderIds = new Set(case1_list.map(item => item.order_id));
 
                 // 3. Perform Case 2 Reconciliation: Cancelled or transit return on TikTok, but still "Chờ giao vận" internally
                 const df_tiktok_all = state.data.tiktok_all;
@@ -444,10 +446,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     const orderStatus = String(row['Order Status'] || '').trim();
                     const cancelType = String(row['Cancelation/Return Type'] || '').trim();
                     
-                    if (orderStatus !== 'Đã hủy' && cancelType !== 'Return/Refund') return;
+                    const isCancelledOrReturned = (orderStatus === 'Đã hủy' || cancelType === 'Return/Refund');
+                    const isCompleted = (orderStatus === 'Đã hoàn tất');
+                    
+                    if (!isCancelledOrReturned || isCompleted) return;
                     if (!orderId) return;
                     if (seenCase2.has(orderId)) return;
                     seenCase2.add(orderId);
+                    
+                    if (case1OrderIds.has(orderId)) return;
                     
                     const cancelReason = String(row['Cancel Reason'] || '').trim();
                     const recipient = String(row['Recipient'] || '').trim();
