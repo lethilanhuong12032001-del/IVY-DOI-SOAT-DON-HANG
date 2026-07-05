@@ -461,6 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const phone = String(row['Phone #'] || '').trim();
                     const trackingId = String(row['Tracking ID'] || '').trim();
                     const carrier = String(row['Shipping Provider Name'] || '').trim();
+                    const cancelledTime = String(row['Cancelled Time'] || '').trim();
                     
                     const internalInfo = internal_data[orderId];
                     if (!internalInfo) return; // Not warehouse mismatch if not shipped/packed
@@ -478,6 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             phone: phone,
                             tracking_id: trackingId,
                             carrier: carrier,
+                            cancel_time: cancelledTime,
                             internal_status: internalInfo.statuses_str,
                             internal_tracking: internalInfo.tracking_str,
                             ivy_code: internalInfo.ivy_codes_str
@@ -690,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
         case2Tbody.innerHTML = '';
         
         if (data.length === 0) {
-            case2Tbody.innerHTML = '<tr><td colspan="10" class="text-center">Không tìm thấy đơn hàng lệch khớp nào.</td></tr>';
+            case2Tbody.innerHTML = '<tr><td colspan="11" class="text-center">Không tìm thấy đơn hàng lệch khớp nào.</td></tr>';
             case2PaginationInfo.textContent = 'Đang hiển thị 0/0 đơn hàng bị lệch.';
             return;
         }
@@ -706,6 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${item.phone}</td>
                 <td>${item.carrier}</td>
                 <td>${item.tracking_id || '-'}</td>
+                <td>${item.cancel_time || '-'}</td>
                 <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.cancel_reason}">${item.cancel_reason}</td>
                 <td><span class="badge-status badge-status-danger">${item.platform_status}</span></td>
                 <td><span class="badge-status badge-status-warning">${item.internal_status}</span></td>
@@ -740,7 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
     exportCase2Btn.addEventListener('click', () => {
         if (!state.reconciledData || state.reconciledData.case2.length === 0) return;
         
-        const headers = ["STT", "Mã Đơn Hàng (Sàn)", "Mã IVY (Kho)", "Người Nhận", "Số Điện Thoại", "Đơn Vị Vận Chuyển", "Mã Vận Đơn", "Lý Do Hủy", "Trạng Thái TikTok", "Trạng Thái Kho"];
+        const headers = ["STT", "Mã Đơn Hàng (Sàn)", "Mã IVY (Kho)", "Người Nhận", "Số Điện Thoại", "Đơn Vị Vận Chuyển", "Mã Vận Đơn", "Thời Gian Hủy/Trả", "Lý Do Hủy", "Trạng Thái TikTok", "Trạng Thái Kho"];
         const rows = state.reconciledData.case2.map((item, idx) => [
             idx + 1,
             item.order_id,
@@ -749,6 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
             item.phone,
             item.carrier,
             item.tracking_id,
+            item.cancel_time,
             item.cancel_reason,
             item.platform_status,
             item.internal_status
